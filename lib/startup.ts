@@ -17,16 +17,16 @@ export async function initializeApp() {
     await initializeDropboxCache()
     console.log('🔍 DEBUG: initializeDropboxCache completed')
     
-    // Set up periodic cache refresh (every 4 hours) - with logging
+    // Set up periodic cache refresh (every 24 hours) - with logging
     setInterval(async () => {
-      console.log('🔄 DEBUG: Periodic cache refresh triggered (every 4 hours)')
+      console.log('🔄 DEBUG: Periodic cache refresh triggered (every 24 hours)')
       try {
         await initializeDropboxCache()
         console.log('✅ DEBUG: Periodic cache refresh completed')
       } catch (error) {
         console.error('❌ DEBUG: Periodic cache refresh failed:', error)
       }
-    }, 4 * 60 * 60 * 1000) // 4 hours
+    }, 24 * 60 * 60 * 1000) // 24 hours
     
     // Set up countdown timer (every 5 minutes) - shows time remaining
     setInterval(() => {
