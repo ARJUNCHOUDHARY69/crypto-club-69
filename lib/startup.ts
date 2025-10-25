@@ -17,16 +17,25 @@ export async function initializeApp() {
     await initializeDropboxCache()
     console.log('🔍 DEBUG: initializeDropboxCache completed')
     
-    // Set up periodic cache refresh (every 2 minutes) - with logging
+    // Set up periodic cache refresh (every 4 hours) - with logging
     setInterval(async () => {
-      console.log('🔄 DEBUG: Periodic cache refresh triggered (every 2 minutes)')
+      console.log('🔄 DEBUG: Periodic cache refresh triggered (every 4 hours)')
       try {
         await initializeDropboxCache()
         console.log('✅ DEBUG: Periodic cache refresh completed')
       } catch (error) {
         console.error('❌ DEBUG: Periodic cache refresh failed:', error)
       }
-    }, 2 * 60 * 1000) // 2 minutes
+    }, 4 * 60 * 60 * 1000) // 4 hours
+    
+    // Set up countdown timer (every 5 minutes) - shows time remaining
+    setInterval(() => {
+      const { getCacheStatus } = require('./dropbox-cache')
+      const status = getCacheStatus()
+      if (status.files_count > 0) {
+        console.log(`⏰ CACHE TIMER: ${status.time_remaining} remaining (${status.files_count} files cached)`)
+      }
+    }, 5 * 60 * 1000) // Every 5 minutes
     
     isInitialized = true
     console.log('✅ Background Dropbox service active')

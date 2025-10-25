@@ -3,18 +3,18 @@ import { initializeDropboxCache, getCacheStatus } from '@/lib/dropbox-cache'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔄 CRON: Dropbox cache refresh triggered by Vercel cron job (every 2 minutes)')
+    console.log('🔄 CRON: Dropbox cache refresh triggered by Vercel cron job (every 4 hours)')
     
     // Initialize/refresh Dropbox cache
     await initializeDropboxCache()
     
     const status = getCacheStatus()
     console.log('✅ CRON: Dropbox cache refresh completed. Files:', status.files_count)
-    console.log('✅ CRON: Cache expires in:', Math.round(status.expires_in / 1000), 'seconds')
+    console.log('⏰ CRON: Cache expires in:', status.time_remaining, `(${Math.round(status.expires_in / 1000)} seconds)`)
     
     return NextResponse.json({
       success: true,
-      message: 'Dropbox cache refreshed by Vercel cron job (every 2 minutes)',
+      message: 'Dropbox cache refreshed by Vercel cron job (every 4 hours)',
       timestamp: new Date().toISOString(),
       status
     })

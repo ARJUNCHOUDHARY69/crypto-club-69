@@ -15,12 +15,12 @@ interface DropboxFile {
 interface DropboxCache {
   files: DropboxFile[]
   last_updated: number
-  cache_duration: number // 2 minutes in milliseconds (for testing)
+  cache_duration: number // 5 hours in milliseconds
 }
 
 const CACHE_DIR = path.join(process.cwd(), 'cache', 'dropbox')
 const CACHE_FILE = path.join(CACHE_DIR, 'dropbox-cache.json')
-const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes in milliseconds (for testing)
+const CACHE_DURATION = 5 * 60 * 60 * 1000 // 5 hours in milliseconds
 
 // Ensure cache directory exists
 function ensureCacheDir() {
@@ -60,9 +60,13 @@ function saveCache(cache: DropboxCache) {
     
     // Save each file to its own file
     cache.files.forEach(file => {
-      const filePath = path.join(filesFolder, file.name)
-      fs.writeFileSync(filePath, file.content)
-      console.log(`✅ DROPBOX DEBUG: Saved file: ${file.name}`)
+      try {
+        const filePath = path.join(filesFolder, file.name)
+        fs.writeFileSync(filePath, file.content)
+        console.log(`✅ DROPBOX DEBUG: Saved file: ${file.name}`)
+      } catch (error) {
+        console.error(`❌ DROPBOX DEBUG: Failed to save file ${file.name}:`, error)
+      }
     })
     
     // Create a lightweight cache metadata without file content
@@ -149,6 +153,25 @@ async function listDropboxFiles(folderPath: string, accessToken: string): Promis
   return data.entries || []
 }
 
+// Clear old cache files that are no longer in Dropbox
+function clearOldCacheFiles(currentFileNames: string[]) {
+  try {
+    const filesFolder = path.join(CACHE_DIR, 'files')
+    if (fs.existsSync(filesFolder)) {
+      const existingFiles = fs.readdirSync(filesFolder)
+      const filesToDelete = existingFiles.filter(file => !currentFileNames.includes(file))
+      
+      filesToDelete.forEach(file => {
+        const filePath = path.join(filesFolder, file)
+        fs.unlinkSync(filePath)
+        console.log(`🗑️ DROPBOX DEBUG: Deleted old cache file: ${file}`)
+      })
+    }
+  } catch (error) {
+    console.error('❌ DROPBOX DEBUG: Error clearing old cache files:', error)
+  }
+}
+
 // Download all files from Dropbox main folder
 export async function downloadDropboxFiles(): Promise<DropboxFile[]> {
   const accessToken = process.env.DROPBOX_ACCESS_TOKEN
@@ -169,11 +192,13 @@ export async function downloadDropboxFiles(): Promise<DropboxFile[]> {
     console.log('🔍 DROPBOX DEBUG: Files details:', JSON.stringify(files, null, 2))
     
     const downloadedFiles: DropboxFile[] = []
+    const currentFileNames: string[] = []
 
     for (const file of files) {
       console.log('🔍 DROPBOX DEBUG: Processing file:', file.name, 'Type:', file['.tag'])
       
       if (file['.tag'] === 'file') {
+        currentFileNames.push(file.name)
         try {
           console.log('🔍 DROPBOX DEBUG: Downloading file:', file.name)
           const content = await downloadFromDropbox(file.path_display, accessToken)
@@ -200,6 +225,9 @@ export async function downloadDropboxFiles(): Promise<DropboxFile[]> {
     }
 
     console.log('🔍 DROPBOX DEBUG: Total files processed:', downloadedFiles.length)
+    
+    // Clear old cache files that are no longer in Dropbox
+    clearOldCacheFiles(currentFileNames)
     
     // Save to cache
     const cache: DropboxCache = {
@@ -259,6 +287,18 @@ export async function initializeDropboxCache() {
   ensureCacheDir()
   console.log('🔍 DROPBOX DEBUG: Cache directory ensured')
   
+  // Check if cache is valid first
+  const cache = loadCache()
+  const isValid = isCacheValid(cache)
+  
+  if (isValid && cache.files.length > 0) {
+    console.log('✅ DROPBOX DEBUG: Cache is valid, skipping download. Files:', cache.files.length)
+    console.log('⏰ DROPBOX DEBUG: Cache expires in:', Math.round((cache.cache_duration - (Date.now() - cache.last_updated)) / 1000), 'seconds')
+    return
+  }
+  
+  console.log('🔄 DROPBOX DEBUG: Cache expired or empty, downloading fresh files...')
+  
   // Clean up any expired cache
   console.log('🔍 DROPBOX DEBUG: Cleaning up expired cache...')
   cleanupCache()
@@ -276,11 +316,19 @@ export function getCacheStatus() {
   const isValid = isCacheValid(cache)
   const timeLeft = isValid ? Math.max(0, cache.cache_duration - (Date.now() - cache.last_updated)) : 0
   
+  // Calculate time remaining in human readable format
+  const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60))
+  const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
+  const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000)
+  
+  const timeRemaining = `${hoursLeft}h ${minutesLeft}m ${secondsLeft}s`
+  
   return {
     files_count: cache.files.length,
     last_updated: new Date(cache.last_updated).toISOString(),
     is_valid: isValid,
     expires_in: timeLeft,
-    cache_duration: cache.cache_duration
+    cache_duration: cache.cache_duration,
+    time_remaining: timeRemaining
   }
 }
