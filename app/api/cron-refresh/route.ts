@@ -1,25 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initializeDropboxCache } from '@/lib/dropbox-cache'
+import { initializeDropboxCache, getCacheStatus } from '@/lib/dropbox-cache'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔄 Cron: 2-minute refresh triggered')
+    console.log('🔄 CRON: Dropbox cache refresh triggered by Vercel cron job (every 2 minutes)')
     
     // Initialize/refresh Dropbox cache
     await initializeDropboxCache()
     
-    console.log('✅ Cron: 2-minute refresh completed')
+    const status = getCacheStatus()
+    console.log('✅ CRON: Dropbox cache refresh completed. Files:', status.files_count)
+    console.log('✅ CRON: Cache expires in:', Math.round(status.expires_in / 1000), 'seconds')
     
     return NextResponse.json({
       success: true,
-      message: '2-minute refresh completed',
-      timestamp: new Date().toISOString()
+      message: 'Dropbox cache refreshed by Vercel cron job (every 2 minutes)',
+      timestamp: new Date().toISOString(),
+      status
     })
   } catch (error) {
-    console.error('❌ Cron: 2-minute refresh failed:', error)
+    console.error('❌ CRON: Dropbox cache refresh failed:', error)
     return NextResponse.json({
       success: false,
-      error: '2-minute refresh failed',
+      error: 'Failed to refresh Dropbox cache via Vercel cron job',
       message: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, { status: 500 })
