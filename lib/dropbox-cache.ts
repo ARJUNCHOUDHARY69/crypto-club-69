@@ -15,12 +15,12 @@ interface DropboxFile {
 interface DropboxCache {
   files: DropboxFile[]
   last_updated: number
-  cache_duration: number // 2 hours in milliseconds
+  cache_duration: number // 2 minutes in milliseconds (for testing)
 }
 
 const CACHE_DIR = path.join(process.cwd(), 'cache', 'dropbox')
 const CACHE_FILE = path.join(CACHE_DIR, 'dropbox-cache.json')
-const CACHE_DURATION = 2 * 60 * 60 * 1000 // 2 hours in milliseconds
+const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes in milliseconds (for testing)
 
 // Ensure cache directory exists
 function ensureCacheDir() {
