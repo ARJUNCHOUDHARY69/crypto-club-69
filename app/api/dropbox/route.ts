@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCachedFiles, getCachedFile, downloadDropboxFiles, getCacheStatus } from '@/lib/dropbox-cache'
+import { getCachedFiles, getCachedFile, downloadDropboxFiles, getCacheStatus, initializeDropboxCache } from '@/lib/dropbox-cache'
+
+// Initialize Dropbox cache on first API call (Vercel serverless)
+let isInitialized = false
 
 export async function GET(request: NextRequest) {
   try {
+    // Initialize Dropbox cache on first API call (Vercel serverless)
+    if (!isInitialized) {
+      console.log('🔄 Vercel: Initializing Dropbox cache on first API call...')
+      await initializeDropboxCache()
+      isInitialized = true
+      console.log('✅ Vercel: Dropbox cache initialized')
+    }
+    
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action') || 'status'
     const fileName = searchParams.get('file')
@@ -69,6 +80,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Dropbox cache on first API call (Vercel serverless)
+    if (!isInitialized) {
+      console.log('🔄 Vercel: Initializing Dropbox cache on first API call...')
+      await initializeDropboxCache()
+      isInitialized = true
+      console.log('✅ Vercel: Dropbox cache initialized')
+    }
+    
     const body = await request.json()
     const { action } = body
     
