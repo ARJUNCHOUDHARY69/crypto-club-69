@@ -17,7 +17,7 @@ export async function initializeApp() {
     await initializeDropboxCache()
     console.log('🔍 DEBUG: initializeDropboxCache completed')
     
-    // Set up periodic cache refresh (every 2 minutes for testing) - with logging
+    // Set up periodic cache refresh (every 2 minutes) - with logging
     setInterval(async () => {
       console.log('🔄 DEBUG: Periodic cache refresh triggered (every 2 minutes)')
       try {
@@ -26,7 +26,7 @@ export async function initializeApp() {
       } catch (error) {
         console.error('❌ DEBUG: Periodic cache refresh failed:', error)
       }
-    }, 2 * 60 * 1000) // 2 minutes for testing
+    }, 2 * 60 * 1000) // 2 minutes
     
     isInitialized = true
     console.log('✅ Background Dropbox service active')

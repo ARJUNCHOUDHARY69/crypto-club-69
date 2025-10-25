@@ -67,6 +67,16 @@ export async function GET(request: NextRequest) {
           status
         })
         
+      case 'refresh':
+        console.log('🔄 Manual refresh triggered via API')
+        await downloadDropboxFiles()
+        const refreshedStatus = getCacheStatus()
+        return NextResponse.json({
+          success: true,
+          message: 'Cache refreshed successfully',
+          status: refreshedStatus
+        })
+        
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
